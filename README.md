@@ -22,7 +22,7 @@ pip install -r requirements.txt
 ```
 
 ## Dataset Preparation
-The Cityscapes and ADE20K dataset can be downloaded and prepared following [SPADE](https://github.com/NVlabs/SPADE.git). The CelebAMask-HQ can be downloaded from [CelebAMask-HQ](https://github.com/switchablenorms/CelebAMask-HQ), you need to to integrate the separated annotations into an image file (the format like other datasets, e.g. Cityscapes and ADE20K). The DeepFashion can be downloaded from [SMIS](https://github.com/Seanseattle/SMIS), and the version with two persons can be downloaded from [OneDrive](). 
+The Cityscapes and ADE20K dataset can be downloaded and prepared following [SPADE](https://github.com/NVlabs/SPADE.git). The CelebAMask-HQ can be downloaded from [CelebAMask-HQ](https://github.com/switchablenorms/CelebAMask-HQ), you need to to integrate the separated annotations into an image file (the format like other datasets, e.g. Cityscapes and ADE20K). The DeepFashion can be downloaded from [SMIS](https://github.com/Seanseattle/SMIS), and the version with two persons can be downloaded from [OneDrive](https://mailustceducn-my.sharepoint.com/:u:/g/personal/tzt_mail_ustc_edu_cn/EeT1iwYxET9OmAf7X39T2HkBCG4xRfkqluN5-jVsjaJgZQ?e=pA4bm7). 
 
 To make or reid the instance map, you can use the following commands:
 ```bash
@@ -33,7 +33,7 @@ python make_instances.py --path [Path_to_dataset] --dataset [ade20k | cityscapes
 
 Once the dataset is ready, the result images can be generated using pretrained models.
 
-1. Download the pretrained models from the [OneDrive](), save it in `checkpoints/`. The structure is as follows:
+1. Download the pretrained models from the [OneDrive](https://mailustceducn-my.sharepoint.com/:u:/g/personal/tzt_mail_ustc_edu_cn/ERX1STGenY9PsJ_IfZKdZycBgOmDAzAdHmXZ1dF42h_04g?e=eYmJXt), save it in `checkpoints/`. The structure is as follows:
 ```bash
 ./checkpoints/
     inade_ade20k/
