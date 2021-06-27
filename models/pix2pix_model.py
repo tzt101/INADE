@@ -181,7 +181,6 @@ class Pix2PixModel(torch.nn.Module):
                 for j in range(num_intermediate_outputs):  # for each layer output
                     unweighted_loss = self.criterionFeat(
                         pred_fake[i][j], pred_real[i][j].detach())
-                    GAN_Feat_loss += unweighted_loss * self.opt.lambda_feat / num_D
                     if not self.isNoise:
                         GAN_Feat_loss += unweighted_loss * self.opt.lambda_feat / num_D
                     else:
