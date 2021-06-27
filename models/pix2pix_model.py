@@ -93,9 +93,9 @@ class Pix2PixModel(torch.nn.Module):
         util.save_network(self.netG, 'G', epoch, self.opt)
         util.save_network(self.netD, 'D', epoch, self.opt)
         if self.opt.use_vae:
-            if 'spade' in opt.norm_mode:
+            if 'spade' in self.opt.norm_mode:
                 util.save_network(self.netE, 'E', epoch, self.opt)
-            elif 'inade' in opt.norm_mode:
+            elif 'inade' in self.opt.norm_mode:
                 util.save_network(self.netIE, 'E', epoch, self.opt)
 
     ############################################################################
