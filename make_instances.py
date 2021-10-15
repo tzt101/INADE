@@ -13,10 +13,10 @@ parser.add_argument('--dataset', type=str, default='ade20k', help='which dataset
 def mkdir_path(path):
     if not os.path.exists(path):
         os.mkdir(path)
-def reid_instance(inst_tensor):
+def reid_instance1(inst_tensor):
     inst_tensor = inst_tensor.float()
     ori_idx = torch.sort(torch.unique(inst_tensor))[0]
-    new_idx = torch.arange(0, ori_idx.size()[0])
+    new_idx = torch.arange(0, ori_idx.size()[0]).float()
     out_inst_tensor = torch.zeros_like(inst_tensor)
     for idx in range(ori_idx.size()[0]):
         tmp = inst_tensor.clone()
@@ -25,6 +25,7 @@ def reid_instance(inst_tensor):
         tmp[tmp == -1] = 0
         out_inst_tensor += tmp
     return out_inst_tensor
+
 # process for ade20k dataset
 def make_inst_for_ade20k(path):
     def make_inst_subset(path, set='validation'):
@@ -41,9 +42,9 @@ def make_inst_for_ade20k(path):
             name = names[id]
             src_mask = np.array(Image.open(os.path.join(src_root,name)))
             tag_label_tensor = torch.from_numpy(src_mask)
-            tag_inst = reid_instance(tag_label_tensor).numpy()
+            tag_inst = reid_instance1(tag_label_tensor).numpy()
             tag_inst = Image.fromarray(np.uint8(tag_inst))
-            tag_inst.save(os.path.join(tag_ins_root,name))
+            # tag_inst.save(os.path.join(tag_ins_root,name))
     make_inst_subset(path, 'validation')
     make_inst_subset(path, 'training')
 
@@ -60,7 +61,7 @@ def make_inst_for_celeba(path):
             name = names[id]
             src_mask = np.array(Image.open(os.path.join(src_root,name)))
             tag_label_tensor = torch.from_numpy(src_mask)
-            tag_inst = reid_instance(tag_label_tensor).numpy()
+            tag_inst = reid_instance1(tag_label_tensor).numpy()
             tag_inst = Image.fromarray(np.uint8(tag_inst))
             tag_inst.save(os.path.join(tag_root,name))
     make_inst_subset(path, 'test')
@@ -82,7 +83,7 @@ def make_inst_for_deepfashion(path):
             src_mask = np.array(Image.open(os.path.join(src_root,name)))
             tag_label = src_mask[:,:,0]
             tag_label_tensor = torch.from_numpy(tag_label)
-            tag_inst = reid_instance(tag_label_tensor).numpy()
+            tag_inst = reid_instance1(tag_label_tensor).numpy()
             tag_label = Image.fromarray(np.uint8(tag_label))
             tag_inst = Image.fromarray(np.uint8(tag_inst))
             tag_label.save(os.path.join(tag_lab_root,name))
@@ -94,7 +95,7 @@ def make_inst_for_deepfashion(path):
 def reid_instance(inst_tensor):
     inst_tensor = inst_tensor.float()
     ori_idx = torch.unique(inst_tensor)
-    new_idx = torch.arange(0,ori_idx.size()[0])
+    new_idx = torch.arange(0,ori_idx.size()[0]).float()
     out_inst_tensor = torch.zeros_like(inst_tensor)
     for idx in range(ori_idx.size()[0]):
         tmp = inst_tensor.clone()
