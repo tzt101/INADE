@@ -116,7 +116,7 @@ class Pix2PixModel(torch.nn.Module):
                 if 'spade' in opt.norm_mode:
                     netE = util.load_network(netE, 'E', opt.which_epoch, opt)
                 elif 'inade' in opt.norm_mode:
-                    netIE = util.load_network(netIE, 'IE', opt.which_epoch, opt)
+                    netIE = util.load_network(netIE, 'E', opt.which_epoch, opt)
 
         return netG, netD, netE, netIE
 
