@@ -44,7 +44,7 @@ def make_inst_for_ade20k(path):
             tag_label_tensor = torch.from_numpy(src_mask)
             tag_inst = reid_instance1(tag_label_tensor).numpy()
             tag_inst = Image.fromarray(np.uint8(tag_inst))
-            # tag_inst.save(os.path.join(tag_ins_root,name))
+            tag_inst.save(os.path.join(tag_ins_root,name))
     make_inst_subset(path, 'validation')
     make_inst_subset(path, 'training')
 
