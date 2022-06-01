@@ -105,7 +105,7 @@ class SPADE(nn.Module):
         return out
 
 class ILADE(nn.Module):
-    def __init__(self, config_text, norm_nc, label_nc, noise_nc):
+    def __init__(self, config_text, norm_nc, label_nc, noise_nc, add_sketch):
         super().__init__()
         self.norm_nc = norm_nc
         assert config_text.startswith('spade')
@@ -126,12 +126,17 @@ class ILADE(nn.Module):
         self.bias = nn.Parameter(torch.Tensor(label_nc, norm_nc,2))
         self.reset_parameters()
         self.fc_noise = nn.Linear(noise_nc, norm_nc)
+        # define the sketchE if specified
+        self.add_sketch = add_sketch
+        if add_sketch:
+            self.sketch_conv = nn.Conv2d(1, norm_nc, kernel_size=3, padding=1) 
+            self.merge_conv = nn.Conv2d(2*norm_nc, norm_nc, kernel_size=1, padding=0, bias=False)
 
     def reset_parameters(self):
         nn.init.uniform_(self.weight)
         nn.init.zeros_(self.bias)
 
-    def forward(self, x, segmap, input_instances=None, noise=None):
+    def forward(self, x, segmap, input_instances=None, noise=None, sketch=None):
         # Part 1. generate parameter-free normalized activations
         # noise is [B, inst_nc, 2, noise_nc], 2 is for scale and bias
         normalized = self.param_free_norm(x)
@@ -163,5 +168,13 @@ class ILADE(nn.Module):
         bias_instance_noise = class_weight * instance_noise + class_bias
 
         out = scale_instance_noise * normalized + bias_instance_noise
+
+        # Part 4. Other operations
+        if self.add_sketch:
+            assert sketch is not None, "If add sketch, sketch input should not be None !"
+            sketch = F.interpolate(sketch, size=x.size()[2:], mode='nearest')
+            sketch = self.sketch_conv(sketch)
+            out = torch.cat([out, sketch], 1)
+            out = self.merge_conv(out)
 
         return out

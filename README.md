@@ -8,6 +8,8 @@
 Semantic image synthesis, translating semantic layouts to photo-realistic images, is a one-to-many mapping problem. Though impressive progress has been recently made, diverse semantic synthesis that can efficiently produce semantic-level multimodal results, still remains a challenge. In this paper, we propose a novel diverse semantic image synthesis framework from the perspective of semantic class distributions, which naturally supports diverse generation at semantic or even instance level. We achieve this by modeling class-level conditional modulation parameters as continuous probability distributions instead of discrete values, and sampling per-instance modulation parameters through instance-adaptive stochastic sampling that is consistent across the network. Moreover, we propose
 prior noise remapping, through linear perturbation parameters encoded from paired references, to facilitate supervised training and exemplar-based instance style control at test time. Extensive experiments on multiple datasets show that our method can achieve superior diversity and comparable quality compared to state-of-the-art methods.
 
+- **_News (2021-12-23)_**: Update the version with additional sketch input. You can use it by `--add_sketch`. Sketches are extracted by [DexiNed](https://github.com/xavysp/DexiNed).
+
 ## Installation
 
 Clone this repo.
@@ -33,23 +35,23 @@ python make_instances.py --path [Path_to_dataset] --dataset [ade20k | cityscapes
 
 Once the dataset is ready, the result images can be generated using pretrained models.
 
-1. Download the pretrained models from the [OneDrive](https://mailustceducn-my.sharepoint.com/:u:/g/personal/tzt_mail_ustc_edu_cn/ERX1STGenY9PsJ_IfZKdZycBgOmDAzAdHmXZ1dF42h_04g?e=eYmJXt), save it in `checkpoints/`. The structure is as follows:
+1. Download the pretrained models from the [OneDrive](https://mailustceducn-my.sharepoint.com/:u:/g/personal/tzt_mail_ustc_edu_cn/Ecm6_uj718hHiZLGJqwEXc0B2YF1PDyy41au7YbgWed4gg), save it in `checkpoints/`. The structure is as follows:
 ```bash
 ./checkpoints/
     inade_ade20k/
+        best_net_E.pth
         best_net_G.pth
-        best_net_IE.pth
     inade_celeba/
+        best_net_E.pth
         best_net_G.pth
-        best_net_IE.pth
     inade_cityscapes/
+        best_net_E.pth
         best_net_G.pth
-        best_net_IE.pth
     inade_deepfashion/
+        best_net_E.pth
         best_net_G.pth
-        best_net_IE.pth
 ```
-The `noise_nc` is 64 for all pretrained models except which on deepfashion (set to 8). Because we find that it's enough for quality and diversity.
+The `noise_nc` is 64 for all pretrained models except which on deepfashion (set to 8). Because we find that it's enough for quality and diversity. Please rename all the best_net_IE.pth with the best_net_E.pth before you use the pretrained Encoder.
 
 2. Generate the images on the test dataset.
 ```bash
@@ -90,6 +92,13 @@ The new options are as follows:
 - `models/networks/`: defines the architecture of all models
 - `options/`: creates option lists using `argparse` package. More individuals are dynamically added in other files as well. Please see the section below.
 - `data/`: defines the class for loading images and label maps.
+
+## Demo
+
+We provide a single demo of INADE on DeepFashion datasets, you can run it with the following command:
+```bash
+python demo.py --name inade_deepfashion --dataset_mode deepfashion
+```
 
 ## Citation
 If you use this code for your research, please cite our papers.

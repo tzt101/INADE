@@ -49,6 +49,7 @@ class BaseOptions():
         parser.add_argument('--load_from_opt_file', action='store_true', help='load the options from checkpoints and use that as default')
         parser.add_argument('--cache_filelist_write', action='store_true', help='saves the current filelist into a text file, so that it loads faster')
         parser.add_argument('--cache_filelist_read', action='store_true', help='reads from the file list cache')
+        parser.add_argument('--add_sketch', action='store_true', help='if specified, add sketch map as input')
 
         # for displays
         parser.add_argument('--display_winsize', type=int, default=400, help='display window size')

@@ -78,7 +78,7 @@ class SPADEGenerator(BaseNetwork):
         b_noise = torch.unsqueeze(noise[:,:,1,:].mul(z[3])+z[2],2)
         return torch.cat([s_noise,b_noise],2)
 
-    def forward(self, input, z=None, input_instances=None, noise=None, noise_ins=None):
+    def forward(self, input, z=None, input_instances=None, sketch=None, noise=None, noise_ins=None):
         seg = input
 
         # Part 1. Process the input
@@ -112,29 +112,29 @@ class SPADEGenerator(BaseNetwork):
             noise = None
 
         # Part 3. Forward the main branch
-        x = self.head_0(x, seg, input_instances, noise)
+        x = self.head_0(x, seg, input_instances, noise, sketch)
 
         x = self.up(x)
-        x = self.G_middle_0(x, seg, input_instances, noise)
+        x = self.G_middle_0(x, seg, input_instances, noise, sketch)
 
         if self.opt.num_upsampling_layers == 'more' or \
            self.opt.num_upsampling_layers == 'most':
             x = self.up(x)
 
-        x = self.G_middle_1(x, seg, input_instances, noise)
+        x = self.G_middle_1(x, seg, input_instances, noise, sketch)
 
         x = self.up(x)
-        x = self.up_0(x, seg, input_instances, noise)
+        x = self.up_0(x, seg, input_instances, noise, sketch)
         x = self.up(x)
-        x = self.up_1(x, seg, input_instances, noise)
+        x = self.up_1(x, seg, input_instances, noise, sketch)
         x = self.up(x)
-        x = self.up_2(x, seg, input_instances, noise)
+        x = self.up_2(x, seg, input_instances, noise, sketch)
         x = self.up(x)
-        x = self.up_3(x, seg, input_instances, noise)
+        x = self.up_3(x, seg, input_instances, noise, sketch)
 
         if self.opt.num_upsampling_layers == 'most':
             x = self.up(x)
-            x = self.up_4(x, seg, input_instances, noise)
+            x = self.up_4(x, seg, input_instances, noise, sketch)
 
         x = self.conv_img(F.leaky_relu(x, 2e-1))
         x = F.tanh(x)

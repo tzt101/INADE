@@ -19,16 +19,19 @@ class Pix2pixDataset(BaseDataset):
     def initialize(self, opt):
         self.opt = opt
 
-        label_paths, image_paths, instance_paths = self.get_paths(opt)
+        label_paths, image_paths, instance_paths, sketch_paths = self.get_paths(opt)
 
         util.natural_sort(label_paths)
         util.natural_sort(image_paths)
         if not opt.no_instance:
             util.natural_sort(instance_paths)
+        if opt.add_sketch:
+            util.natural_sort(sketch_paths)
 
         label_paths = label_paths[:opt.max_dataset_size]
         image_paths = image_paths[:opt.max_dataset_size]
         instance_paths = instance_paths[:opt.max_dataset_size]
+        sketch_paths = sketch_paths[:opt.max_dataset_size]
 
         if not opt.no_pairing_check:
             for path1, path2 in zip(label_paths, image_paths):
@@ -38,6 +41,7 @@ class Pix2pixDataset(BaseDataset):
         self.label_paths = label_paths
         self.image_paths = image_paths
         self.instance_paths = instance_paths
+        self.sketch_paths = sketch_paths
 
         size = len(self.label_paths)
         self.dataset_size = size
@@ -46,8 +50,9 @@ class Pix2pixDataset(BaseDataset):
         label_paths = []
         image_paths = []
         instance_paths = []
+        sketch_paths = []
         assert False, "A subclass of Pix2pixDataset must override self.get_paths(self, opt)"
-        return label_paths, image_paths, instance_paths
+        return label_paths, image_paths, instance_paths, sketch_paths
 
     def paths_match(self, path1, path2):
         filename1_without_ext = os.path.splitext(os.path.basename(path1))[0]
@@ -86,9 +91,19 @@ class Pix2pixDataset(BaseDataset):
             else:
                 instance_tensor = transform_label(instance)
 
+        # if using sketch maps
+        if not self.opt.add_sketch:
+            sketch_tensor = 0
+        else:
+            # sketch range is 0 and 255
+            sketch_path = self.sketch_paths[index]
+            sketch = Image.open(sketch_path)
+            sketch_tensor = transform_label(sketch)
+
         input_dict = {'label': label_tensor,
                       'instance': instance_tensor,
                       'image': image_tensor,
+                      'sketch': sketch_tensor,
                       'path': image_path,
                       }
 

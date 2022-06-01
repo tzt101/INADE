@@ -36,4 +36,10 @@ class DeepfashionDataset(Pix2pixDataset):
         else:
             instance_paths = []
 
-        return label_paths, image_paths, instance_paths
+        if opt.add_sketch:
+            sketch_dir = os.path.join(root, '%s_edgeD' % phase)
+            sketch_paths = make_dataset(sketch_dir, recursive=False)
+        else:
+            sketch_paths = []
+
+        return label_paths, image_paths, instance_paths, sketch_paths

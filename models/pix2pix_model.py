@@ -47,24 +47,28 @@ class Pix2PixModel(torch.nn.Module):
     # of deep networks. We used this approach since DataParallel module
     # can't parallelize custom functions, we branch to different
     # routines based on |mode|.
-    def forward(self, data, mode):
-        input_semantics, real_image, input_instances = self.preprocess_input(data)
+    def forward(self, data, mode, noise=None, noise_ins=None):
+        input_semantics, real_image, input_instances, sketch = self.preprocess_input(data)
 
         if mode == 'generator':
             g_loss, generated = self.compute_generator_loss(
-                input_semantics, real_image, input_instances)
+                input_semantics, real_image, input_instances, sketch)
             return g_loss, generated
         elif mode == 'discriminator':
             d_loss = self.compute_discriminator_loss(
-                input_semantics, real_image, input_instances)
+                input_semantics, real_image, input_instances, sketch)
             return d_loss
         elif mode == 'encode_only' and 'spade' in self.opt.norm_mode:
             z, mu, logvar = self.encode_z(real_image)
             return mu, logvar
         elif mode == 'inference':
             with torch.no_grad():
-                fake_image, _ = self.generate_fake(input_semantics, real_image, input_instances)
+                fake_image, _ = self.generate_fake(input_semantics, real_image, input_instances, sketch)
             return fake_image
+        elif mode == 'demo':
+            with torch.no_grad():
+                fake_image = self.demo_generate_fake(input_semantics, real_image, input_instances, sketch, noise, noise_ins, data)
+                return fake_image
         else:
             raise ValueError("|mode| is invalid")
 
@@ -131,6 +135,7 @@ class Pix2PixModel(torch.nn.Module):
             data['label'] = data['label'].cuda()
             data['instance'] = data['instance'].cuda()
             data['image'] = data['image'].cuda()
+            data['sketch'] = data['sketch'].cuda()
 
         # create one-hot label map
         label_map = data['label']
@@ -156,13 +161,13 @@ class Pix2PixModel(torch.nn.Module):
         else:
             input_instances = None
 
-        return input_semantics, data['image'], input_instances
+        return input_semantics, data['image'], input_instances, data['sketch']
 
-    def compute_generator_loss(self, input_semantics, real_image, input_instances):
+    def compute_generator_loss(self, input_semantics, real_image, input_instances, sketch):
         G_losses = {}
 
         fake_image, KLD_loss = self.generate_fake(
-            input_semantics, real_image, input_instances, compute_kld_loss=self.opt.use_vae)
+            input_semantics, real_image, input_instances, sketch, compute_kld_loss=self.opt.use_vae)
 
         if self.opt.use_vae:
             G_losses['KLD'] = KLD_loss
@@ -197,10 +202,10 @@ class Pix2PixModel(torch.nn.Module):
 
         return G_losses, fake_image
 
-    def compute_discriminator_loss(self, input_semantics, real_image, input_instances):
+    def compute_discriminator_loss(self, input_semantics, real_image, input_instances, sketch):
         D_losses = {}
         with torch.no_grad():
-            fake_image, _ = self.generate_fake(input_semantics, real_image, input_instances)
+            fake_image, _ = self.generate_fake(input_semantics, real_image, input_instances, sketch)
             fake_image = fake_image.detach()
             fake_image.requires_grad_()
 
@@ -232,7 +237,7 @@ class Pix2PixModel(torch.nn.Module):
         z = [s_mus,torch.exp(0.5 * s_logvars),b_mus,torch.exp(0.5 * b_logvars)]
         return z, s_mus, s_logvars, b_mus, b_logvars
 
-    def generate_fake(self, input_semantics, real_image, input_instances, compute_kld_loss=False):
+    def generate_fake(self, input_semantics, real_image, input_instances, sketch, compute_kld_loss=False):
         z = None
         KLD_loss = None
         if self.opt.use_vae:
@@ -247,9 +252,9 @@ class Pix2PixModel(torch.nn.Module):
 
         if self.amp:
             with autocast():
-                fake_image = self.netG(input_semantics, z=z, input_instances=input_instances)
+                fake_image = self.netG(input_semantics, z=z, input_instances=input_instances, sketch=sketch)
         else:
-            fake_image = self.netG(input_semantics, z=z, input_instances=input_instances)
+            fake_image = self.netG(input_semantics, z=z, input_instances=input_instances, sketch=sketch)
 
         assert (not compute_kld_loss) or self.opt.use_vae, \
             "You cannot compute KLD loss if opt.use_vae == False"
@@ -310,3 +315,37 @@ class Pix2PixModel(torch.nn.Module):
 
     def use_gpu(self):
         return len(self.opt.gpu_ids) > 0
+
+    def demo_generate_fake(self, input_semantics, real_image, input_instances, sketch, noise, noise_ins, data):
+        # process ref inputs
+        data['ref_label'] = data['ref_label'].long()
+        if self.use_gpu():
+            data['ref_label'] = data['ref_label'].cuda()
+            data['ref_instance'] = data['ref_instance'].cuda()
+            data['ref_image'] = data['ref_image'].cuda()
+            data['image'] = data['image'].cuda()
+
+        # create one-hot instance map
+        ref_inst_map = data['ref_instance'].long()
+        bs, _, h, w = ref_inst_map.size()
+        nc = ref_inst_map.max()+1
+        ref_input_inst = self.FloatTensor(bs, nc, h, w).zero_()
+        ref_input_instances = ref_input_inst.scatter_(1, ref_inst_map, 1.0)
+
+        # reference encoder
+        z, _, _, _, _ = self.instance_encode_z(data['ref_image'], ref_input_instances)
+
+        # init the z with zero mu and one std
+        inst_nc = input_instances.shape[1]
+        s_mus = torch.zeros([1, inst_nc, self.opt.noise_nc]).cuda()
+        s_stds = torch.ones([1, inst_nc, self.opt.noise_nc]).cuda()
+        z_0 = [s_mus, s_stds, s_mus, s_stds]
+
+        # change the z_0 from z if necessary
+        if data['is_ref_inst'] and data['ref_inst_id'] != -1:
+            for idx in range(len(z_0)):
+                z_0[idx][:,data['inst_id'],:] = z[idx][:,data['ref_inst_id'],:]
+
+        fake_image = self.netG(input_semantics, z=z_0, input_instances=input_instances, sketch=sketch, noise=noise, noise_ins=noise_ins)
+
+        return fake_image

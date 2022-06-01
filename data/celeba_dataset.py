@@ -29,6 +29,7 @@ class CelebADataset(Pix2pixDataset):
         image_paths = []
         label_paths = []
         instance_paths = []
+        sketch_paths = []
 
         for p in all_images:
 
@@ -38,8 +39,10 @@ class CelebADataset(Pix2pixDataset):
                 label_paths.append(p)
             elif 'instances' in p and p.endswith('.png'):
                 instance_paths.append(p)
+            elif 'edgesD' in p and p.endswith('.png') and opt.add_sketch:
+                sketch_paths.append(p)
 
-        return label_paths, image_paths, instance_paths
+        return label_paths, image_paths, instance_paths, sketch_paths
 
 def make_inst_data():
     def mkdir_path(path):
